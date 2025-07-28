@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import DeleteDialog from '@/components/dialogs/DeleteDialog.vue'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 interface User {
   id: number
@@ -12,6 +12,22 @@ interface User {
   status: number
   avatar?: string
 }
+//começa o novo
+const search = ref('')// serve para armazenar oq o usuario esta digitando
+
+const filterUsers = computed(() => {
+  return users.value.filter(user => {
+    const term = search.value.toLowerCase()
+    return (
+      user.fullName.toLowerCase().includes(term) ||
+      user.email.toLowerCase().includes(term) ||
+      user.startDate.toLowerCase().includes(term) ||
+      user.salary.toString().includes(term) ||
+      user.age.toString().includes(term)
+    )
+  })
+})
+//acaba o novo
 
 const headers = [
   { title: 'Name', key: 'fullName' },
@@ -215,77 +231,80 @@ onMounted(() => {
 
 <template>
   <div>
-    <VDataTable :headers="headers" :items="users" :items-per-page="5">
-      <template #item.status="{ item }">
-        <VChip :color="resolveStatus(item.status).color">
-          {{ resolveStatus(item.status).text }}
-        </VChip>
-      </template>
-      <template #item.actions="{ item }">
-        <div class="d-flex gap-2">
-          <VBtn icon @click="openEditDialog(item)">
-            <VIcon icon="tabler-edit" />
-          </VBtn>
-          <VBtn icon @click="openDeleteDialog(item)">
-            <VIcon icon="tabler-trash" />
-          </VBtn>
-        </div>
-      </template>
-      <template #item.fullName="{ item }">
-        <div class="d-flex align-center">
-          <VAvatar size="36" class="me-3" color="primary" variant="tonal">
-            <template v-if="item.avatar">
-              <VImg :src="item.avatar" />
-            </template>
-            <template v-else>
-              {{ getInitials(item.fullName) }}
-            </template>
-          </VAvatar>
-
-          <div class="d-flex flex-column">
-            <span class="font-weight-medium text-high-emphasis">
-              {{ item.fullName }}
-            </span>
-            <small class="text-disabled">{{ item.email }}</small>
+    <VTextField v-model="search" label="Porcure aqui" prepend-inner-icon="mdi-magnify" class="mb-4" clearable />
+    <div>
+      <VDataTable :headers="headers" :items="filterUsers" :items-per-page="5" :search="search">
+        <template #item.status="{ item }">
+          <VChip :color="resolveStatus(item.status).color">
+            {{ resolveStatus(item.status).text }}
+          </VChip>
+        </template>
+        <template #item.actions="{ item }">
+          <div class="d-flex gap-2">
+            <VBtn icon @click="openEditDialog(item)">
+              <VIcon icon="tabler-edit" />
+            </VBtn>
+            <VBtn icon @click="openDeleteDialog(item)">
+              <VIcon icon="tabler-trash" />
+            </VBtn>
           </div>
-        </div>
-      </template>
-    </VDataTable>
+        </template>
+        <template #item.fullName="{ item }">
+          <div class="d-flex align-center">
+            <VAvatar size="36" class="me-3" color="primary" variant="tonal">
+              <template v-if="item.avatar">
+                <VImg :src="item.avatar" />
+              </template>
+              <template v-else>
+                {{ getInitials(item.fullName) }}
+              </template>
+            </VAvatar>
 
-    <VDialog v-model="editDialog" max-width="500">
-      <VCard title="Edit User">
-        <VCardText>
-          <VTextField v-model="editedUser.fullName" label="Name" />
-          <VTextField v-model="editedUser.email" label="Email" />
-          <VTextField v-model="editedUser.salary" label="Salary" type="number" />
-          <VTextField v-model="editedUser.age" label="Age" type="number" />
-          <VTextField v-model="editedUser.startDate" label="Start Date" />
-          <VSelect v-model="editedUser.status" :items="statusOptions" item-title="text" item-value="value"
-            label="Status" />
-        </VCardText>
-        <VCardActions>
-          <VSpacer />
-          <VBtn @click="closeEdit" color="secondary">Cancel</VBtn>
-          <VBtn @click="saveUser" color="primary">Save</VBtn>
-        </VCardActions>
-      </VCard>
-    </VDialog>
+            <div class="d-flex flex-column">
+              <span class="font-weight-medium text-high-emphasis">
+                {{ item.fullName }}
+              </span>
+              <small class="text-disabled">{{ item.email }}</small>
+            </div>
+          </div>
+        </template>
+      </VDataTable>
 
-    <VDialog v-model="deleteDialog" max-width="400">
-      <VCard title="Confirm Delete">
-        <VCardText>
-          Are you sure you want to delete <strong>{{ editedUser.fullName }}</strong>?
-        </VCardText>
-        <VCardActions>
-          <VSpacer />
-          <VBtn @click="closeDelete" color="secondary">Cancel</VBtn>
-          <VBtn @click="deleteUser" color="error">Delete</VBtn>
-        </VCardActions>
-      </VCard>
-    </VDialog>
+      <VDialog v-model="editDialog" max-width="500">
+        <VCard title="Edit User">
+          <VCardText>
+            <VTextField v-model="editedUser.fullName" label="Name" />
+            <VTextField v-model="editedUser.email" label="Email" />
+            <VTextField v-model="editedUser.salary" label="Salary" type="number" />
+            <VTextField v-model="editedUser.age" label="Age" type="number" />
+            <VTextField v-model="editedUser.startDate" label="Start Date" />
+            <VSelect v-model="editedUser.status" :items="statusOptions" item-title="text" item-value="value"
+              label="Status" />
+          </VCardText>
+          <VCardActions>
+            <VSpacer />
+            <VBtn @click="closeEdit" color="secondary">Cancel</VBtn>
+            <VBtn @click="saveUser" color="primary">Save</VBtn>
+          </VCardActions>
+        </VCard>
+      </VDialog>
 
-    <DeleteDialog :senhor-serigueijo="['s']" :is-open="deleteDialog" @delete="deleteUser" @close="closeDelete"
-      :name="editedUser.fullName" />
+      <VDialog v-model="deleteDialog" max-width="400">
+        <VCard title="Confirm Delete">
+          <VCardText>
+            Are you sure you want to delete <strong>{{ editedUser.fullName }}</strong>?
+          </VCardText>
+          <VCardActions>
+            <VSpacer />
+            <VBtn @click="closeDelete" color="secondary">Cancel</VBtn>
+            <VBtn @click="deleteUser" color="error">Delete</VBtn>
+          </VCardActions>
+        </VCard>
+      </VDialog>
+
+      <DeleteDialog :senhor-serigueijo="['s']" :is-open="deleteDialog" @delete="deleteUser" @close="closeDelete"
+        :name="editedUser.fullName" />
+    </div>
   </div>
 </template>
 
